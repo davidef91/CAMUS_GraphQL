@@ -1,7 +1,7 @@
 import { GraphQLObjectType, GraphQLString, GraphQLSchema, GraphQLList } from 'graphql'
 import {
-  GraphQLURL,
-  GraphQLDateTime
+    GraphQLURL,
+    GraphQLDateTime
 } from 'graphql-custom-types'
 
 import { eventType } from './eventSchema'
@@ -48,14 +48,14 @@ const camusSchema = new GraphQLSchema({
             event: {
                 type: new GraphQLList(eventType),
                 args: eventArgs,
-                resolve: (root, {category, city}) => {
+                resolve: (root, { category, city }) => {
                     return services.getEventsFromService(category, city)
                 }
             },
             restaurant: {
                 type: new GraphQLList(restaurantType),
                 args: restaurantArgs,
-                resolve: (root, {cuisine_type, type, city}) => {
+                resolve: (root, { cuisine_type, type, city }) => {
                     return services.getRestaurantsFromService(cuisine_type, type, city)
                 }
             }
@@ -63,6 +63,4 @@ const camusSchema = new GraphQLSchema({
     })
 })
 
-
 export default camusSchema
-
