@@ -7,9 +7,9 @@ import {
 import { eventType } from './eventSchema'
 import { restaurantType } from './restaurantSchema'
 import { locationType } from './locationSchema'
-import Services from './../services'
+import ServicesManager from './../ServicesManager'
 
-const services = new Services()
+let servicesManager = new ServicesManager()
 
 const eventArgs = {
     startTime: {
@@ -49,14 +49,14 @@ const camusSchema = new GraphQLSchema({
                 type: new GraphQLList(eventType),
                 args: eventArgs,
                 resolve: (root, { category, city }) => {
-                    return services.getEventsFromService(category, city)
+                    return servicesManager.getResults(category, city)
                 }
             },
             restaurant: {
                 type: new GraphQLList(restaurantType),
                 args: restaurantArgs,
                 resolve: (root, { cuisine_type, type, city }) => {
-                    return services.getRestaurantsFromService(cuisine_type, type, city)
+                    return servicesManager.getResults(cuisine_type, type, city)
                 }
             }
         }
