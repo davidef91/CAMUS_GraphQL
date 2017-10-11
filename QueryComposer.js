@@ -1,6 +1,4 @@
-import fetch from 'node-fetch'
 const _ = require('lodash')
-const _b = require('bluebird')
 
 import {serviceMatrix} from './ServiceMatrix'
 
@@ -14,7 +12,7 @@ export default class QueryComposer {
 
         return filteredMatrix[0].query([{ city }])
         .then(filteredMatrix[1].query)
-        .then((events) => { 
+        .then((events) => {
             return _.map(events, (e) => {
                 return e.event
             })

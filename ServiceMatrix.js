@@ -44,18 +44,19 @@ let eventBriteGetEventsByCity = (cities) => {
 
 //INPUT: [{city: {city}, event: {}, param1: venue_id, param2: category_id}], OUTPUT: add Location to every event
 let eventBriteGetEventLocation = (input) => {
-    return Promise.resolve(
-        _.forEach(input, (obj) => {
+    return new Promise((resolve, reject) => {
+        _.forEach(input, (obj, i) => {
             let { param1 } = obj
             let { event }  = obj
             fetch('https://www.eventbriteapi.com/v3/venues/' + param1 + '?token=FLLF3FJHKUWCXUIUYAZ3')
             .then((res) => {
                 return res.json()
             }).then((json) => {
-                event.location = { 'id': uuidv1(), 'latitude': json.address.latitude, 'longitude': json.address.longitude, 'zip_code': json.address.postal_code, 'address': json.address.localized_address_display, 'city': json.address.city, 'country': json.address.country, 'name': json.name }
-            })
+                input[i].event.location = { 'id': uuidv1(), 'latitude': json.address.latitude, 'longitude': json.address.longitude, 'zip_code': json.address.postal_code, 'address': json.address.localized_address_display, 'city': json.address.city, 'country': json.address.country, 'name': json.name }
+                resolve(input)
+            })   
         })
-    )
+    })
 }
 
 //INPUT: category_id, OUTPUT: eventCategory
