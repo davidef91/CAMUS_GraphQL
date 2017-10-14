@@ -15,6 +15,6 @@ export default class ServiceSelector {
             id: 5678
         }
 
-        return eventBrite
+        return [eventful, eventBrite]
     }
 }

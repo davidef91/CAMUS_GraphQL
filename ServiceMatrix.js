@@ -16,147 +16,226 @@ let lift = (f) => {
     }
 }
 
-//INPUT: [{city}], OUTPUT: [{city: {city}, event: {}, param1: venue_id, param2: category_id}]
+//INPUT: [{city: {city}}], OUTPUT: [{city: {city}, event: {...}, param1: venue_id, param2: category_id}]
 let eventBriteGetEventsByCity = (cities) => {
     return new Promise((resolve, reject) => {
-        let results = []
         _.map(cities, (obj) => {
-            let { city } = obj            
+            let { city } = obj        
             fetch('https://www.eventbriteapi.com/v3/events/search/?token=FLLF3FJHKUWCXUIUYAZ3&location.address=' + city)
             .then((res) => {
                 return res.json()
             }).then((json) => {
-                _.forEach(json.events, (e) => {
+                return _b.map(json.events, (e) => {
                     let result = {
                         city: city,
                         event: { 'id': uuidv1(), 'name': e.name.text, 'description': e.description.text, 'url': e.url, 'startTime': e.start.local, 'endTime': e.end.local},
                         param1: e.venue_id,
                         param2: e.category_id
                     }
-                    results.push(result)
-                    result = {}
+                    return result
                 })
-                resolve(results)
+                .then((arr) => {
+                    resolve(arr)
+                })
             })
         })
     })
 }
 
-//INPUT: [{city: {city}, event: {}, param1: venue_id, param2: category_id}], OUTPUT: add Location to every event
+//INPUT: [event: {...}, param1: venue_id, param2: category_id}], OUTPUT: add Location to every event
 let eventBriteGetEventLocation = (input) => {
-    return new Promise((resolve, reject) => {
-        _.forEach(input, (obj, i) => {
-            let { param1 } = obj
-            let { event }  = obj
-            fetch('https://www.eventbriteapi.com/v3/venues/' + param1 + '?token=FLLF3FJHKUWCXUIUYAZ3')
-            .then((res) => {
-                return res.json()
-            }).then((json) => {
-                input[i].event.location = { 'id': uuidv1(), 'latitude': json.address.latitude, 'longitude': json.address.longitude, 'zip_code': json.address.postal_code, 'address': json.address.localized_address_display, 'city': json.address.city, 'country': json.address.country, 'name': json.name }
-                resolve(input)
-            })   
+    return _b.map(input, (obj) => {
+        let { param1 } = obj
+        return fetch('https://www.eventbriteapi.com/v3/venues/' + param1 + '?token=FLLF3FJHKUWCXUIUYAZ3')
+        .then((res) => {
+            return res.json()
+        }).then((json) => {
+            obj.event.location = { 'id': uuidv1(), 'latitude': json.address.latitude, 'longitude': json.address.longitude, 'zip_code': json.address.postal_code, 'address': json.address.localized_address_display, 'city': json.address.city, 'country': json.address.country, 'name': json.name }
+            return obj
         })
     })
+    .then((arr) => {return arr})
 }
 
-//INPUT: category_id, OUTPUT: eventCategory
-let eventBriteGetEventCategory = (obj) => {
-    return new Promise((resolve, reject) => {
+//INPUT: [event: {...}, param1: venue_id, param2: category_id}], OUTPUT: add Category to every event
+let eventBriteGetEventCategory = (input) => {
+    return _b.map(input, (obj) => {
         let { param2 } = obj
-        let category = ''
-        fetch('https://www.eventbriteapi.com/v3/categories/' + param2 + '?token=FLLF3FJHKUWCXUIUYAZ3')
+        return fetch('https://www.eventbriteapi.com/v3/categories/' + param2 + '?token=FLLF3FJHKUWCXUIUYAZ3')
         .then((res) => {
             return res.json()
         }).then((json) => {
-            //console.log(category_id + ': ' + json.name)
-            category = json.name            
-            resolve(category)
+            obj.event.category = json.name
+            return obj
         })
     })
+    .then((arr) => {return arr})
 }
 
-//INPUT: category, OUTPUT: {event, venue_id, category_id}
-let eventBriteGetEventsByCategory = ({ category }) => {
+//INPUT: [{category: {category}}], OUTPUT: [{category: {category}, event: {...}, param1: venue_id}]
+let eventBriteGetEventsByCategory = ( categories ) => {
     return new Promise((resolve, reject) => {
-        let result = {'event': {}, 'venue_id': 0, 'category_id': 0}
-        let results = []
-        let i = 0
-        let categoryID = 0
-        fetch('https://www.eventbriteapi.com/v3/categories/?token=FLLF3FJHKUWCXUIUYAZ3')
-        .then((res) => {
-            return res.json()
-        }).then((json) => {
-            categoryID = json.categories.forEach((c) => {
-                if (c.name === category) {
-                    return c.id
-                }
-            })
-            fetch('https://www.eventbriteapi.com/v3/events/search/?token=FLLF3FJHKUWCXUIUYAZ3&categories=' + categoryID)
+        _.map(categories, (obj) => {
+            let { category } = obj
+            fetch('https://www.eventbriteapi.com/v3/categories/?token=FLLF3FJHKUWCXUIUYAZ3')
             .then((res) => {
                 return res.json()
             }).then((json) => {
-                json.events.forEach((e) => {
-                    result.event = { 'id': i, 'name': e.name.text, 'description': e.description.text, 'url': e.url, 'startTime': e.start.local, 'endTime': e.end.local}
-                    result.venue_id = e.venue_id
-                    result.category_id = e.category_id
-                    results.push(result)
-                    i++
-                })
-                resolve(results)
-            })
-        })
-    })
-}
-
-let eventBriteGetEventsByCityAndCategory = ({ category, city }) => {
-
-}
-
-let eventfulGetEventsByCity = ({ city }) => {
-    return new Promise((resolve, reject) => {
-        let event = {}
-        let results = []
-        let location = {}
-        let i = 0
-        let j = 0
-        fetch('http://api.eventful.com/json/events/search?app_key=tQ7XxjRcFLKvhTWV&date=Future&location=' + city)
-        .then((res) => {
-            return res.json()
-        }).then((json) => {
-            json.events.event.forEach((ev) => {
-                fetch('http://api.eventful.com/json/events/get?app_key=tQ7XxjRcFLKvhTWV&id=' + ev.id)
+                let categoryID = _.find(json.categories, (c) => { return c.name === category }).id                
+                return fetch('https://www.eventbriteapi.com/v3/events/search/?token=FLLF3FJHKUWCXUIUYAZ3&categories=' + categoryID)
                 .then((res) => {
                     return res.json()
-                }).then((e) => {
-                    location = { 'id': j, 'latitude': e.latitude, 'longitude': e.longitude, 'zip_code': e.postal_code, 'address': e.venue_address, 'city': e.city_name, 'country': e.country_abbr, 'name': e.venue_name.name }
-                    event = { 'id': i, 'name': e.title, 'description': e.description, 'url': e.url, 'startTime': e.start_time, 'endTime': e.stop_time, 'location': location, 'category': e.categories.category[0].name }
-                    results.push(event)
-                    event = {}
-                    location = {}
-                    i++
-                    j++
-                    if(i = 10)
-                        resolve(results)
+                }).then((json) => {
+                    return _b.map(json.events, (e) => {
+                        let result = {
+                            category: category,
+                            event: { 'id': uuidv1(), 'name': e.name.text, 'description': e.description.text, 'url': e.url, 'startTime': e.start.local, 'endTime': e.end.local},
+                            param1: e.venue_id,
+                            param2: e.category_id
+                        }
+                        return result
+                    })
+                })
+                .then((arr) => {
+                    resolve(arr)
                 })
             })
         })
     })
 }
 
-let eventfulGetEventsByCategory = ({ category }) => {
-    
+//INPUT: [{city: {city}, category: {category}}], OUTPUT: [{city: {city}, category: {category}, event: {...}, param1: venue_id}]
+let eventBriteGetEventsByCityAndCategory = (input) => {
+    return new Promise((resolve, reject) => {
+        _.map(input, (obj) => {
+            let { category } = obj
+            let { city } = obj
+            fetch('https://www.eventbriteapi.com/v3/categories/?token=FLLF3FJHKUWCXUIUYAZ3')
+            .then((res) => {
+                return res.json()
+            }).then((json) => {
+                let categoryID = _.find(json.categories, (c) => { return c.name === category }).id                
+                return fetch('https://www.eventbriteapi.com/v3/events/search/?token=FLLF3FJHKUWCXUIUYAZ3&categories=' + categoryID + '&location.address=' + city)
+                .then((res) => {
+                    return res.json()
+                }).then((json) => {
+                    return _b.map(json.events, (e) => {
+                        let result = {
+                            category: category,
+                            city: city,
+                            event: { 'id': uuidv1(), 'name': e.name.text, 'description': e.description.text, 'url': e.url, 'startTime': e.start.local, 'endTime': e.end.local, 'category': category},
+                            param1: e.venue_id
+                        }
+                        return result
+                    })
+                })
+                .then((arr) => {
+                    resolve(arr)
+                })
+            })
+        })
+    })
 }
+
+//INPUT: [{city: {city}, category: {category}}], OUTPUT: [{city: {city}, category: {category}, event: {...}, param1: venue_id}]
+let eventfulGetEventsByCity = ( cities ) => {
+    return new Promise((resolve, reject) => {
+        _.map(cities, (obj) => {
+            let { city } = obj
+            fetch('http://api.eventful.com/json/events/search?app_key=tQ7XxjRcFLKvhTWV&date=Future&location=' + city)
+            .then((res) => {
+                return res.json()
+            }).then((json) => {
+                return _b.map(json.events.event, (obj) => {
+                    return fetch('http://api.eventful.com/json/events/get?app_key=tQ7XxjRcFLKvhTWV&id=' + obj.id)
+                    .then((res) => {
+                        return res.json()
+                    }).then((e) => {
+                        let location = { 'id': uuidv1(), 'latitude': e.latitude, 'longitude': e.longitude, 'zip_code': e.postal_code, 'address': e.address, 'city': e.city, 'country': e.country_abbr, 'name': e.venue_name }
+                        let result = {
+                            city: city,
+                            event: { 'id': uuidv1(), 'name': e.title, 'description': e.description, 'url': e.url, 'startTime': e.start_time, 'endTime': e.stop_time, 'location': location, 'category': e.categories.category[0].name }
+                        }
+                        return result
+                    })
+                })
+                .then((arr) => {
+                    resolve(arr)})
+            })
+        })
+    })
+}
+
+//INPUT: [{category: {category}}], OUTPUT: [{category: {category}, event: {...}]
+let eventfulGetEventsByCategory = (categories) => {
+    return new Promise((resolve, reject) => {
+        _.map(categories, (obj) => {
+            let { category } = obj
+            fetch('http://api.eventful.com/json/events/search?app_key=tQ7XxjRcFLKvhTWV&date=Future&category=' + category.toLowerCase())
+            .then((res) => {
+                return res.json()
+            }).then((json) => {
+                return _b.map(json.events.event, (obj) => {
+                    return fetch('http://api.eventful.com/json/events/get?app_key=tQ7XxjRcFLKvhTWV&id=' + obj.id)
+                    .then((res) => {
+                        return res.json()
+                    }).then((e) => {
+                        let location = { 'id': uuidv1(), 'latitude': e.latitude, 'longitude': e.longitude, 'zip_code': e.postal_code, 'address': e.address, 'city': e.city, 'country': e.country_abbr, 'name': e.venue_name }
+                        let result = {
+                            city: city,
+                            event: { 'id': uuidv1(), 'name': e.title, 'description': e.description, 'url': e.url, 'startTime': e.start_time, 'endTime': e.stop_time, 'location': location, 'category': e.categories.category[0].name }
+                        }
+                        return result
+                    })
+                })
+                .then((arr) => {
+                    resolve(arr)})
+            })
+        })
+    })    
+}
+
+//INPUT: [{city: {city}, category: {category}}], OUTPUT: [{city: {city}, category: {category}, event: {...}]
+let eventfulGetEventsByCityAndCategory = (input) => {
+    return new Promise((resolve, reject) => {
+        _.map(input, (obj) => {
+            let { category } = obj
+            let { city } = obj
+            fetch('http://api.eventful.com/json/events/search?app_key=tQ7XxjRcFLKvhTWV&date=Future&category=' + category.toLowerCase() + '&location=' + city)
+            .then((res) => {
+                return res.json()
+            }).then((json) => {
+                return _b.map(json.events.event, (obj) => {
+                    return fetch('http://api.eventful.com/json/events/get?app_key=tQ7XxjRcFLKvhTWV&id=' + obj.id)
+                    .then((res) => {
+                        return res.json()
+                    }).then((e) => {
+                        let location = { 'id': uuidv1(), 'latitude': e.latitude, 'longitude': e.longitude, 'zip_code': e.postal_code, 'address': e.address, 'city': e.city, 'country': e.country_abbr, 'name': e.venue_name }
+                        let result = {
+                            city: city,
+                            category: category,
+                            event: { 'id': uuidv1(), 'name': e.title, 'description': e.description, 'url': e.url, 'startTime': e.start_time, 'endTime': e.stop_time, 'location': location, 'category': category }
+                        }
+                        return result
+                    })
+                })
+                .then((arr) => {
+                    resolve(arr)})
+            })
+        })
+    })
+}
+
+
 
 let serviceMatrix = [
     {
         serviceID: 1234,
         city: IN,
-        searchPosition: NONE,
+        position: NONE,
         category: NONE,
         startDate: NONE,
         event: OUT,
-        eventPosition: NONE,
-        eventCategory: NONE,
         param1: OUT, //venue_id
         param2: OUT, //category_id
         param3: NONE,
@@ -165,12 +244,10 @@ let serviceMatrix = [
     {
         serviceID: 1234,
         city: NONE,
-        searchPosition: NONE,
+        position: OUT,
         category: NONE,
         startDate: NONE,
         event: NONE,
-        eventPosition: OUT,
-        eventCategory: NONE,
         param1: IN, //venue_id
         param2: NONE,
         param3: NONE,
@@ -179,12 +256,10 @@ let serviceMatrix = [
     {
         serviceID: 1234,
         city: NONE,
-        searchPosition: NONE,
-        category: NONE,
+        position: NONE,
+        category: OUT,
         startDate: NONE,
         event: NONE,
-        eventPosition: NONE,
-        eventCategory: OUT,
         param1: NONE,
         param2: IN, //category_id
         param3: NONE,
@@ -193,26 +268,22 @@ let serviceMatrix = [
     {
         serviceID: 1234,
         city: IN,
-        searchPosition: NONE,
+        position: NONE,
         category: IN,
         startDate: NONE,
         event: OUT,
-        eventPosition: NONE,
-        eventCategory: NONE,
         param1: OUT, //venue_id
-        param2: OUT, //category_id
+        param2: NONE,
         param3: NONE,
         query: eventBriteGetEventsByCityAndCategory
     },
     {
         serviceID: 1234,
         city: NONE,
-        searchPosition: NONE,
+        position: NONE,
         category: IN,
         startDate: NONE,
         event: OUT,
-        eventPosition: NONE,
-        eventCategory: NONE,
         param1: OUT, //venue_id
         param2: OUT, //category_id
         param3: NONE,
@@ -221,12 +292,10 @@ let serviceMatrix = [
     {
         serviceID: 5678,
         city: IN,
-        searchPosition: NONE,
+        position: NONE,
         category: NONE,
         startDate: NONE,
         event: OUT,
-        eventPosition: NONE,
-        eventCategory: NONE,
         param1: NONE,
         param2: NONE,
         param3: NONE,
@@ -235,17 +304,27 @@ let serviceMatrix = [
     {
         serviceID: 5678,
         city: NONE,
-        searchPosition: NONE,
+        position: NONE,
         category: IN,
         startDate: NONE,
         event: OUT,
-        eventPosition: NONE,
-        eventCategory: NONE,
         param1: NONE,
         param2: NONE,
         param3: NONE,
         query: eventfulGetEventsByCategory
-    }
+    },
+    {
+        serviceID: 5678,
+        city: IN,
+        position: NONE,
+        category: IN,
+        startDate: NONE,
+        event: OUT,
+        param1: NONE,
+        param2: NONE,
+        param3: NONE,
+        query: eventfulGetEventsByCityAndCategory
+    },
 ]
 
 export { serviceMatrix }
